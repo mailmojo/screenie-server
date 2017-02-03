@@ -1,0 +1,30 @@
+{
+  "name": "screenie-server",
+  "version": "1.0.0",
+  "description": "A screenshot HTTP service using PhantomJS",
+  "keywords": [
+      "screenshot",
+      "phantomjs",
+      "koa"
+  ],
+  "main": "src/server.js",
+  "bin": {
+    "screenie": "src/server.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Frode Danielsen <frode@e5r.no>",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 6.0.0"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/eliksir/screenie-server.git"
+  },
+  "dependencies": {
+    "koa": "1.2.4",
+    "phantom-pool": "1.1.0"
+  }
+}
