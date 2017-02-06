@@ -40,3 +40,14 @@ The PhantomJS pool can also be customized with environment variables:
 And lastly, of course the HTTP port can be customized:
 
 - `SCREENIE_PORT`: HTTP port, defaults to 3000.
+
+## Contributing
+
+We are open to contributions or suggestions. File issues or suggestions on the
+[GitHub issues page](https://github.com/eliksir/screenie-server/issues), and
+please do submit a pull request if you have the time to implement an
+improvement or bugfix.
+
+## License
+
+Published under the MIT license.
