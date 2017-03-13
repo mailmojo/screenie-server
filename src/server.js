@@ -90,7 +90,7 @@ app.use(function *(next) {
  */
 app.use(function *(next) {
     if (this.state.format === 'pdf') {
-        this.state.page.property('paperSize', {
+        yield this.state.page.property('paperSize', {
             format: 'A4',
             orientation: 'portrait',
             border: '1cm',
