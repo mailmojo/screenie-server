@@ -19,27 +19,30 @@ npm install screenie-server
 ```
 
 Then request a screenshot of an URL using the `url` query parameter:
-`http://localhost:3000/?url=http://google.com/`
+`http://localhost:3000/?url=http://google.com/&format=jpeg`
 
-The default size of the screenshot created is 1024x768. This can be customized
-through the `width` and `height` query parameters, but will be constrained
-within 2048x2048.
+The size of the screenshot can be customized through the `width` and `height`
+query parameters, but will always be constrained within 2048x2048. The default
+size used when the parameters are missing can be customized by environment
+variables:
 
-Alternatively you can customize the default size and image type using
-environment variables:
+- `SCREENIE_WIDTH`: Default width, as integer, in pixels (default `1024`).
+- `SCREENIE_HEIGHT`: Default height, as integer, in pixels (default `768`).
 
-- `SCREENIE_WIDTH`: Default width, as integer, in pixels.
-- `SCREENIE_HEIGHT`: Default height, as integer, in pixels.
-- `SCREENIE_IMAGE_TYPE`: Image type, one of `jpeg`, `png` or `gif`.
+The `format` query parameter can be used to request a specific format of the
+screenshot. The supported formats are PNG, JPEG, GIF and even PDF. You can
+also set the default format through an environment variable:
+
+- `SCREENIE_DEFAULT_FORMAT`: Default format (default `jpeg`).
 
 The PhantomJS pool can also be customized with environment variables:
 
-- `SCREENIE_POOL_MIN`: Minimum number of PhantomJS instances.
-- `SCREENIE_POOL_MAX`: Maximum number of PhantomJS instances.
+- `SCREENIE_POOL_MIN`: Minimum number of PhantomJS instances (default `2`).
+- `SCREENIE_POOL_MAX`: Maximum number of PhantomJS instances (default `10`).
 
 And lastly, of course the HTTP port can be customized:
 
-- `SCREENIE_PORT`: HTTP port, defaults to 3000.
+- `SCREENIE_PORT`: HTTP port (default `3000`).
 
 ## Contributing
 

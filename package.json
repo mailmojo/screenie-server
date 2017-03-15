@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "koa": "1.2.4",
-    "phantom-pool": "1.1.0"
+    "phantom-pool": "1.1.0",
+    "tmp": "0.0.31"
   }
 }

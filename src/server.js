@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const koa = require('koa');
+const tmp = require('tmp');
 const createPhantomPool = require('phantom-pool').default;
 
 const app = koa();
@@ -15,7 +16,14 @@ const imageSize = {
     width: process.env.SCREENIE_WIDTH || 1024,
     height: process.env.SCREENIE_HEIGHT || 768,
 };
-const imageType = process.env.SCREENIE_IMAGE_TYPE || 'jpeg';
+const supportedFormats = [
+    'gif',
+    'jpeg',
+    'jpg',
+    'pdf',
+    'png',
+]
+const defaultFormat = process.env.SCREENIE_DEFAULT_FORMAT || 'jpeg';
 
 /**
  * Set up a PhantomJS instance with a page and configure viewport size.
@@ -49,7 +57,7 @@ app.use(function *(next) {
     const { url } = this.request.query;
 
     if (!url) {
-        this.throw(400);
+        this.throw('No url request parameter supplied.', 400);
     }
 
     yield this.state.page.open(url)
@@ -60,22 +68,69 @@ app.use(function *(next) {
 });
 
 /**
+ * Determine the format of the output based on the `format` query parameter.
+ *
+ * The format must be among the formats supported by PhantomJS, else 400
+ * Bad Request is thrown. If no format is provided, the default is used.
+ */
+app.use(function *(next) {
+    const { format = defaultFormat } = this.request.query;
+
+    if (supportedFormats.indexOf(format.toLowerCase()) === -1) {
+        this.throw(`Format ${format} not supported.`, 400);
+    }
+
+    this.type = this.state.format = format;
+    yield next;
+});
+
+/**
+ * Set up the size of the page to render, either the paper size for PDF or
+ * clip rectangle for image formats.
+ */
+app.use(function *(next) {
+    if (this.state.format === 'pdf') {
+        yield this.state.page.property('paperSize', {
+            format: 'A4',
+            orientation: 'portrait',
+            border: '1cm',
+        });
+    }
+    else {
+        yield this.state.page.property('viewportSize')
+            .then(size => ({
+                top: 0,
+                left: 0,
+                width: size.width,
+                height: size.height,
+            }))
+            .then(clipRect => this.state.page.property('clipRect', clipRect));
+    }
+
+    yield next;
+});
+
+/**
  * Generate a screenshot of the loaded page.
  *
  * If successful the screenshot is sent as the response.
  */
 app.use(function *(next) {
-    yield this.state.page.property('viewportSize')
-        .then(size => ({
-            top: 0, left: 0,
-            width: size.width, height: size.height
-        }))
-        .then(clipRect => this.state.page.property('clipRect', clipRect))
-        .then(() => this.state.page.renderBase64(imageType))
-        .then((imageData) => {
-            this.type = `image/${imageType}`;
-            this.body = Buffer.from(imageData, 'base64');
-        });
+    if (this.state.format === 'pdf') {
+        const tmpFile = tmp.fileSync({ postfix: '.pdf'});
+
+        yield this.state.page.render(tmpFile.name)
+            .then(() => {
+                this.body = fs.createReadStream(tmpFile.name);
+
+                // Delete the temp file after served to client
+                this.body.on('close', () => tmpFile.removeCallback());
+            });
+    }
+    else {
+        yield this.state.page.renderBase64(this.state.format)
+            .then((imageData) => this.body = Buffer.from(imageData, 'base64'));
+    }
 });
 
 app.listen(serverPort);
