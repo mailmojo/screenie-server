@@ -1,6 +1,6 @@
 {
   "name": "screenie-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A screenshot HTTP service using PhantomJS",
   "author": "Frode Danielsen <frode@e5r.no>",
   "keywords": [
