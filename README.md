@@ -6,17 +6,19 @@ Creates a HTTP server using [Koa](https://github.com/koajs/koa), by default on
 port 3000. Additionally a pool of PhantomJS instances will be created to render
 pages and create screenshots of them on requests.
 
-## Install
+## Installation / Usage
+
+You can install from npm and run the server manually:
 
 ```bash
 npm install screenie-server
-```
-
-## Usage
-
-```bash
 ./node_modules/.bin/screenie-server
 ```
+
+Alternatively, we provide a Docker image (build from the
+[Dockerfile](Dockerfile)) at [eliksir/screenie-server](https://hub.docker.com/r/eliksir/screenie-server/).
+
+## Configuration
 
 Then request a screenshot of an URL using the `url` query parameter:
 `http://localhost:3000/?url=http://google.com/&format=jpeg`
