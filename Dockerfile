@@ -3,7 +3,7 @@ FROM node:7.7.2-alpine
 ENV SCREENIE_VERSION=1.1.0
 
 RUN apk --update upgrade && \
-    apk add curl ca-certificates
+    apk add ca-certificates
 
 RUN apk add --no-cache fontconfig curl \
     && curl -Ls "https://github.com/dustinblackman/phantomized/releases/download/2.1.1/dockerized-phantomjs.tar.gz" | tar xz -C / \
