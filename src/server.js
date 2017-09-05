@@ -22,8 +22,18 @@ const supportedFormats = [
     'jpg',
     'pdf',
     'png',
-]
+];
 const defaultFormat = process.env.SCREENIE_DEFAULT_FORMAT || 'jpeg';
+
+/*
+ * Clean up the PhantomJS pool before exiting when receiving a termination
+ * signal. Exit with status code 143 (128 + SIGTERM's signal number, 15).
+ */
+process.on('SIGTERM', () => {
+    pool.drain()
+        .then(() => pool.clear())
+        .then(() => process.exit(143));
+});
 
 /**
  * Set up a PhantomJS instance with a page and configure viewport size.
