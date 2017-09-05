@@ -4,9 +4,9 @@
   "description": "A screenshot HTTP service using PhantomJS",
   "author": "Frode Danielsen <frode@e5r.no>",
   "keywords": [
-      "screenshot",
-      "phantomjs",
-      "koa"
+    "screenshot",
+    "phantomjs",
+    "koa"
   ],
   "main": "src/server.js",
   "bin": {
@@ -20,8 +20,8 @@
     "node": ">= 6.0.0"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/eliksir/screenie-server.git"
+    "type": "git",
+    "url": "https://github.com/eliksir/screenie-server.git"
   },
   "bugs": {
     "url": "https://github.com/eliksir/screenie-server/issues"
@@ -29,6 +29,7 @@
   "dependencies": {
     "koa": "1.2.4",
     "phantom-pool": "1.1.0",
-    "tmp": "0.0.31"
+    "tmp": "0.0.31",
+    "winston": "2.3.1"
   }
 }
