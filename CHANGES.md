@@ -1,3 +1,10 @@
+1.2.0 / 16-10-2017
+==================
+
+* Add basic logging functionality
+* Handle SIGTERM gracefully, draining the pool
+* Added Dockerfile with CA certificate updates
+
 1.1.0 / 17-03-2017
 ==================
 
