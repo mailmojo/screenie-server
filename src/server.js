@@ -3,7 +3,17 @@
 const fs = require('fs');
 const koa = require('koa');
 const tmp = require('tmp');
+const winston = require('winston');
 const createPhantomPool = require('phantom-pool').default;
+
+const logger = new (winston.Logger)({
+    level: process.env.SCREENIE_LOG_LEVEL || 'info',
+    transports: [
+        new (winston.transports.Console)({
+            timestamp: () => new Date().toISOString(),
+        }),
+    ],
+});
 
 const app = koa();
 const pool = createPhantomPool({
@@ -30,6 +40,7 @@ const defaultFormat = process.env.SCREENIE_DEFAULT_FORMAT || 'jpeg';
  * signal. Exit with status code 143 (128 + SIGTERM's signal number, 15).
  */
 process.on('SIGTERM', () => {
+    logger.info('Received SIGTERM, exiting...');
     pool.drain()
         .then(() => pool.clear())
         .then(() => process.exit(143));
@@ -50,6 +61,10 @@ app.use(function *(next) {
         ),
     };
 
+    logger.verbose(
+        `Instantiating PhantomJS with page size ${size.width}x${size.height}`
+    );
+
     yield pool.use(instance => instance.createPage())
         .then(page => this.state.page = page)
         .then(() => this.state.page.property('viewportSize', size));
@@ -69,6 +84,8 @@ app.use(function *(next) {
     if (!url) {
         this.throw('No url request parameter supplied.', 400);
     }
+
+    logger.verbose(`Attempting to load ${url}`);
 
     yield this.state.page.open(url)
         .then(status => status === 'success')
@@ -126,7 +143,12 @@ app.use(function *(next) {
  * If successful the screenshot is sent as the response.
  */
 app.use(function *(next) {
-    if (this.state.format === 'pdf') {
+    const url = this.request.query.url;
+    const format = this.state.format;
+
+    logger.info(`Rendering screenshot of ${url} to ${format}`);
+
+    if (format === 'pdf') {
         const tmpFile = tmp.fileSync({ postfix: '.pdf'});
 
         yield this.state.page.render(tmpFile.name)
@@ -138,10 +160,10 @@ app.use(function *(next) {
             });
     }
     else {
-        yield this.state.page.renderBase64(this.state.format)
+        yield this.state.page.renderBase64(format)
             .then((imageData) => this.body = Buffer.from(imageData, 'base64'));
     }
 });
 
 app.listen(serverPort);
-console.log(`Screenie server started on port ${serverPort}`);
+logger.info(`Screenie server started on port ${serverPort}`);

@@ -42,6 +42,13 @@ The PhantomJS pool can also be customized with environment variables:
 - `SCREENIE_POOL_MIN`: Minimum number of PhantomJS instances (default `2`).
 - `SCREENIE_POOL_MAX`: Maximum number of PhantomJS instances (default `10`).
 
+To control the level of logging that will be performed, customize the
+`SCREENIE_LOG_LEVEL` environment variable. Supported values are `error`,
+`warn`, `info`, `verbose`, `debug`, and `silly`, though only `info` and
+`verbose` are currently in use.
+
+- `SCREENIE_LOG_LEVEL`: Logging level (default `info`).
+
 And lastly, of course the HTTP port can be customized:
 
 - `SCREENIE_PORT`: HTTP port (default `3000`).
