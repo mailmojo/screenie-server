@@ -1,9 +1,9 @@
 {
   "name": "screenie-server",
-  "version": "1.2.0",
-  "description": "A screenshot HTTP service using PhantomJS",
+  "version": "2.0.0-alpha.1",
+  "description": "A screenshot HTTP service using Puppeteer",
   "author": "Frode Danielsen <frode@e5r.no>",
-  "keywords": ["screenshot", "phantomjs", "koa"],
+  "keywords": ["screenshot", "puppeteer", "koa"],
   "main": "src/server.js",
   "bin": {
     "screenie": "src/server.js"
@@ -23,8 +23,9 @@
     "url": "https://github.com/eliksir/screenie-server/issues"
   },
   "dependencies": {
-    "koa": "1.2.4",
-    "phantom-pool": "1.1.0",
+    "koa": "1.4.1",
+    "puppeteer": "1.0.0",
+    "puppeteer-pool": "eliksir/puppeteer-pool#v1.3.1",
     "tmp": "0.0.31",
     "winston": "2.3.1"
   }
