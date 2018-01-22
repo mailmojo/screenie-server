@@ -38,6 +38,11 @@ also set the default format through an environment variable:
 
 * `SCREENIE_DEFAULT_FORMAT`: Default format (default `jpeg`).
 
+The Puppeteer pool can also be customized with environment variables:
+
+* `SCREENIE_POOL_MIN`: Minimum number of Puppeteer instances (default `2`).
+* `SCREENIE_POOL_MAX`: Maximum number of Puppeteer instances (default `10`).
+
 To control the level of logging that will be performed, customize the
 `SCREENIE_LOG_LEVEL` environment variable. Supported values are `error`,
 `warn`, `info`, `verbose`, `debug`, and `silly`, though only `info` and
