@@ -50,6 +50,10 @@ To control the level of logging that will be performed, customize the
 
 * `SCREENIE_LOG_LEVEL`: Logging level (default `info`).
 
+To open up file scheme in URL parameter:
+
+* `SCREENIE_ALLOW_FILE_SCHEME`: true (default `false`).
+
 And lastly, of course the HTTP port can be customized:
 
 * `SCREENIE_PORT`: HTTP port (default `3000`).
