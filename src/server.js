@@ -30,6 +30,7 @@ const imageSize = {
 };
 const serverPort = process.env.SCREENIE_PORT || 3000;
 const supportedFormats = ['jpg', 'jpeg', 'pdf', 'png'];
+const allowFileScheme = process.env.SCREENIE_ALLOW_FILE_SCHEME || false;
 
 const app = new Koa();
 logger.verbose('Created KOA server');
@@ -108,6 +109,10 @@ app.use(function*(next) {
 
   if (!url) {
     this.throw(400, 'No url request parameter supplied.');
+  }
+
+  if (url.indexOf('file://') >= 0 && !allowFileScheme) {
+    this.throw(404);
   }
 
   logger.verbose(`Attempting to load ${url}`);
