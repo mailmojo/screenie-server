@@ -112,7 +112,9 @@ app.use(function*(next) {
 
   logger.verbose(`Attempting to load ${url}`);
 
-  yield page.goto(url).catch(() => (gotoError = true));
+  yield page
+    .goto(url, { waitUntil: 'networkidle0' })
+    .catch(() => (gotoError = true));
 
   if (gotoError) {
     this.throw(404);
