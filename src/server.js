@@ -117,7 +117,7 @@ app.use(function*(next) {
   }
 
   if (url.indexOf('file://') >= 0 && !allowFileScheme) {
-    this.throw(404);
+    this.throw(403);
   }
 
   logger.verbose(`Attempting to load ${url}`);
