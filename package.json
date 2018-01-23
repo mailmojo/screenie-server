@@ -1,6 +1,6 @@
 {
   "name": "screenie-server",
-  "version": "2.0.0-alpha.2",
+  "version": "2.0.0-alpha.3",
   "description": "A screenshot HTTP service using Puppeteer",
   "author": "Frode Danielsen <frode@e5r.no>",
   "keywords": [
