@@ -54,6 +54,12 @@ To open up file scheme in URL parameter:
 
 * `SCREENIE_ALLOW_FILE_SCHEME`: true (default `false`).
 
+Delay from the `load` event until the screenshot is taken. This can solve
+issues with rendering (i.e. rendering webfonts) not being complete before the
+screenshot.
+
+* `SCREENIE_SCREENSHOT_DELAY`: Time in milliseconds (default `50`).
+
 And lastly, of course the HTTP port can be customized:
 
 * `SCREENIE_PORT`: HTTP port (default `3000`).
