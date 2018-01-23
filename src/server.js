@@ -41,6 +41,11 @@ const pool = createPuppeteerPool({
   puppeteerArgs: Object.assign({}, chromiumArgs, chromiumExec),
 });
 
+const screenshotDelay = () =>
+  new Promise(resolve =>
+    setTimeout(resolve, process.env.SCREENIE_SCREENSHOT_DELAY | 50)
+  );
+
 logger.verbose('Created Puppeteer pool');
 
 /*
@@ -118,7 +123,8 @@ app.use(function*(next) {
   logger.verbose(`Attempting to load ${url}`);
 
   yield page
-    .goto(url, { waitUntil: 'networkidle0' })
+    .goto(url)
+    .then(screenshotDelay)
     .catch(() => (gotoError = true));
 
   if (gotoError) {
