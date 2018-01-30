@@ -1,6 +1,6 @@
 FROM node:6.12-slim
 
-ENV SCREENIE_VERSION=2.0.0-alpha.3
+ENV SCREENIE_VERSION=2.0.0
 ENV SCREENIE_CHROMIUM_ARGS=--no-sandbox
 
 RUN apt-get update && \
