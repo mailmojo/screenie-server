@@ -174,16 +174,13 @@ app.use(function*(next) {
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
   } else {
+    let clipInfo = this.request.query.fullPage === "1" ? {fullPage: true} : { clipInfo: { x: 0, y: 0, width: width, height: height}} ;
+    
     yield page
       .screenshot({
         type: format === 'jpg' ? 'jpeg' : format,
-        clip: {
-          x: 0,
-          y: 0,
-          width: width,
-          height: height,
-        },
         omitBackground: true,
+        ...clipInfo,
       })
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
