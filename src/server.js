@@ -174,14 +174,19 @@ app.use(function*(next) {
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
   } else {
-    let clipInfo = this.request.query.fullPage === "1" ? {fullPage: true} : { clipInfo: { x: 0, y: 0, width: width, height: height}} ;
-    
-    yield page
-      .screenshot({
+    let info = {
         type: format === 'jpg' ? 'jpeg' : format,
         omitBackground: true,
-        ...clipInfo,
-      })
+      };
+
+    if (this.request.query.fullPage === "1") {
+        info['fullPage'] = true;
+    } else {
+        info["clip"] = {x: 0, y: 0, width: width,height: height}
+    }
+
+    yield page
+      .screenshot(info)
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
   }
