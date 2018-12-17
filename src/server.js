@@ -158,7 +158,7 @@ app.use(function*(next) {
  * If successful the screenshot is sent as the response.
  */
 app.use(function*(next) {
-  const { url } = this.request.query;
+  const { url, fullPage } = this.request.query;
   const { format, page, browser } = this.state;
   const { width, height } = page.viewport();
   let renderError;
@@ -174,17 +174,12 @@ app.use(function*(next) {
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
   } else {
+    let clipInfo = fullPage === "1" ? {fullPage: true} : { clip: { x: 0, y: 0, width: width, height: height}} ;
     yield page
-      .screenshot({
+      .screenshot(Object.assign({
         type: format === 'jpg' ? 'jpeg' : format,
-        clip: {
-          x: 0,
-          y: 0,
-          width: width,
-          height: height,
-        },
         omitBackground: true,
-      })
+      }, clipInfo))
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
   }
@@ -213,3 +208,4 @@ app.on('error', (error, context) => {
 
 app.listen(serverPort);
 logger.info(`Screenie server started on port ${serverPort}`);
+
