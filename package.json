@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "koa": "1.4.1",
-    "puppeteer": "1.0.0",
+    "puppeteer": "1.12.2",
     "puppeteer-pool": "eliksir/puppeteer-pool#v1.3.1",
     "tmp": "0.0.31",
     "winston": "2.3.1"
