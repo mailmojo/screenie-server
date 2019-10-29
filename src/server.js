@@ -35,11 +35,17 @@ const allowFileScheme = process.env.SCREENIE_ALLOW_FILE_SCHEME || false;
 const app = new Koa();
 logger.verbose('Created KOA server');
 
-const pool = createPuppeteerPool({
-  min: process.env.SCREENIE_POOL_MIN || 2,
-  max: process.env.SCREENIE_POOL_MAX || 10,
-  puppeteerArgs: Object.assign({}, chromiumArgs, chromiumExec),
-});
+const puppeteerArgs = Object.assign({}, chromiumArgs, chromiumExec);
+
+const pool =
+  process.env.SCREENIE_USE_POOL &&
+  createPuppeteerPool({
+    min: process.env.SCREENIE_POOL_MIN || 2,
+    max: process.env.SCREENIE_POOL_MAX || 10,
+    puppeteerArgs,
+  });
+
+let browser = null;
 
 const screenshotDelay = () =>
   new Promise(resolve =>
@@ -54,10 +60,15 @@ logger.verbose('Created Puppeteer pool');
  */
 process.on('SIGTERM', () => {
   logger.info('Received SIGTERM, exiting...');
-  pool
-    .drain()
-    .then(() => pool.clear())
-    .then(() => process.exit(143));
+
+  if (pool) {
+    pool
+      .drain()
+      .then(() => pool.clear())
+      .then(() => process.exit(143));
+  } else {
+    browser.close();
+  }
 });
 
 /**
@@ -69,17 +80,8 @@ app.use(function*(next) {
     width: Math.min(2048, parseInt(width, 10) || imageSize.width),
     height: Math.min(2048, parseInt(height, 10) || imageSize.height),
   };
-  let pageError;
 
-  if (!url) {
-    this.throw(400, 'No url request parameter supplied.');
-  }
-
-  logger.verbose(`Instantiating Page with size ${size.width}x${size.height}`);
-
-  yield pool.use(instance => {
-    const pid = instance.process().pid;
-    logger.verbose(`Using browser instance with PID ${pid}`);
+  const createPage = instance => {
     return instance
       .newPage()
       .then(page => {
@@ -95,7 +97,32 @@ app.use(function*(next) {
         logger.verbose(`Invalidating instance with PID ${pid}`);
         pool.invalidate(instance);
       });
-  });
+  };
+
+  let pageError;
+
+  if (!url) {
+    this.throw(400, 'No url request parameter supplied.');
+  }
+
+  logger.verbose(`Instantiating Page with size ${size.width}x${size.height}`);
+
+  if (pool) {
+    yield pool.use(instance => {
+      const pid = instance.process().pid;
+      logger.verbose(`Using browser instance with PID ${pid}`);
+      return createPage(instance);
+    });
+  } else if (!browser) {
+    return puppeteer
+      .launch(puppeteerArgs)
+      .then(instance => {
+        browser = instance;
+      })
+      .then(createPage);
+  } else {
+    return createPage(browser);
+  }
 
   if (pageError) {
     this.throw(400, `Could not open a page: ${pageError.message}`);
