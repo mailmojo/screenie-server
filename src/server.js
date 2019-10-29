@@ -64,12 +64,16 @@ process.on('SIGTERM', () => {
  * Set up a Puppeteer instance for a page and configure viewport size.
  */
 app.use(function*(next) {
-  const { width, height } = this.request.query;
+  const { width, height, url } = this.request.query;
   const size = {
     width: Math.min(2048, parseInt(width, 10) || imageSize.width),
     height: Math.min(2048, parseInt(height, 10) || imageSize.height),
   };
   let pageError;
+
+  if (!url) {
+    this.throw(400, 'No url request parameter supplied.');
+  }
 
   logger.verbose(`Instantiating Page with size ${size.width}x${size.height}`);
 
@@ -111,10 +115,6 @@ app.use(function*(next) {
   const { url } = this.request.query;
 
   let gotoError;
-
-  if (!url) {
-    this.throw(400, 'No url request parameter supplied.');
-  }
 
   if (url.indexOf('file://') >= 0 && !allowFileScheme) {
     this.throw(403);
@@ -174,12 +174,20 @@ app.use(function*(next) {
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
   } else {
-    let clipInfo = fullPage === "1" ? {fullPage: true} : { clip: { x: 0, y: 0, width: width, height: height}} ;
+    let clipInfo =
+      fullPage === '1'
+        ? { fullPage: true }
+        : { clip: { x: 0, y: 0, width: width, height: height } };
     yield page
-      .screenshot(Object.assign({
-        type: format === 'jpg' ? 'jpeg' : format,
-        omitBackground: true,
-      }, clipInfo))
+      .screenshot(
+        Object.assign(
+          {
+            type: format === 'jpg' ? 'jpeg' : format,
+            omitBackground: true,
+          },
+          clipInfo
+        )
+      )
       .then(response => (this.body = response))
       .catch(error => (renderError = error));
   }
@@ -208,4 +216,3 @@ app.on('error', (error, context) => {
 
 app.listen(serverPort);
 logger.info(`Screenie server started on port ${serverPort}`);
-
