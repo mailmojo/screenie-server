@@ -1,3 +1,11 @@
+3.0.0-beta / 31-10-2019
+==================
+
+* Use Alpine as base Docker image
+* Update puppeteer to 1.19.0
+* Update Koa to 2.11.0
+* Update Winston to 3.2.1
+
 2.0.0 / 30-01-2018
 ==================
 
