@@ -1,5 +1,11 @@
+3.0.0-beta.1 / 04-11-2019
+=========================
+
+* Support waiting for `document.fonts.ready` event.
+* Make `SCREENIE_SCREENSHOT_DELAY` environment optional.
+
 3.0.0-beta / 31-10-2019
-==================
+=======================
 
 * Use Alpine as base Docker image
 * Update puppeteer to 1.19.0
