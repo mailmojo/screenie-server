@@ -113,7 +113,7 @@ app.use(async (ctx, next) => {
   const { page } = ctx.state;
   const { url } = ctx.request.query;
 
-  let gotoError;
+  let errorStatus = null;
 
   if (!url) {
     ctx.throw(400, 'No url request parameter supplied.');
@@ -126,18 +126,28 @@ app.use(async (ctx, next) => {
   logger.log('verbose', `Attempting to load ${url}`);
 
   try {
-    await page.goto(url);
+    const response = await page.goto(url);
+    const status = response.status();
+
+    if (status < 200 || status > 299) {
+      errorStatus = status;
+      throw new Error('Non-OK server response');
+    }
+
     await page.evaluateHandle('document.fonts.ready');
 
     if (screenshotDelay) {
       await new Promise(resolve => setTimeout(resolve, screenshotDelay));
     }
   } catch (error) {
-    gotoError = true;
+    // Sets a catch-all error status for cases where `page.goto` throws
+    if (!errorStatus) {
+      errorStatus = 500;
+    }
   }
 
-  if (gotoError) {
-    ctx.throw(404);
+  if (errorStatus) {
+    ctx.throw(errorStatus);
   }
 
   await next();
