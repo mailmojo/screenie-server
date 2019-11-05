@@ -44,10 +44,7 @@ const pool = createPuppeteerPool({
   puppeteerArgs: Object.assign({}, chromiumArgs, chromiumExec),
 });
 
-const screenshotDelay = () =>
-  new Promise(resolve =>
-    setTimeout(resolve, process.env.SCREENIE_SCREENSHOT_DELAY || 50)
-  );
+const screenshotDelay = process.env.SCREENIE_SCREENSHOT_DELAY;
 
 logger.log('verbose', 'Created Puppeteer pool');
 
@@ -128,10 +125,16 @@ app.use(async (ctx, next) => {
 
   logger.log('verbose', `Attempting to load ${url}`);
 
-  await page
-    .goto(url)
-    .then(screenshotDelay)
-    .catch(() => (gotoError = true));
+  try {
+    await page.goto(url);
+    await page.evaluateHandle('document.fonts.ready');
+
+    if (screenshotDelay) {
+      await new Promise(resolve => setTimeout(resolve, screenshotDelay));
+    }
+  } catch (error) {
+    gotoError = true;
+  }
 
   if (gotoError) {
     ctx.throw(404);
