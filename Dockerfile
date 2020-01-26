@@ -1,4 +1,4 @@
-FROM node:10.16-alpine
+FROM node:12-alpine3.11
 
 ENV SCREENIE_VERSION=3.0.0-beta.2
 ENV SCREENIE_CHROMIUM_ARGS=--no-sandbox
@@ -10,15 +10,13 @@ WORKDIR /usr/src/app
 
 # Installs latest Chromium (77) package
 RUN apk update && apk upgrade && \
-  echo @3.10 http://nl.alpinelinux.org/alpine/v3.10/community >> /etc/apk/repositories && \
-  echo @3.10 http://nl.alpinelinux.org/alpine/v3.10/main >> /etc/apk/repositories && \
   apk add --no-cache \
-  chromium@3.10 \
-  nss@3.10 \
-  freetype@3.10 \
-  harfbuzz@3.10 \
-  ttf-freefont@3.10 \
-  git@3.10 && \
+  chromium\
+  nss\
+  freetype\
+  harfbuzz\
+  ttf-freefont\
+  git&& \
   wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64 && \
   chmod +x /usr/local/bin/dumb-init
 
