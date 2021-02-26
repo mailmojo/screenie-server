@@ -1,6 +1,8 @@
-FROM node:10.16-alpine
+FROM node:14-alpine3.12
 
-ENV SCREENIE_VERSION=3.0.0-beta.2
+ARG TARGETPLATFORM
+
+ENV SCREENIE_VERSION=3.0.0
 ENV SCREENIE_CHROMIUM_ARGS=--no-sandbox
 ENV SCREENIE_CHROMIUM_EXEC=/usr/lib/chromium/chrome
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
@@ -8,19 +10,20 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
-# Installs latest Chromium (77) package
+# Installs latest Chromium package
 RUN apk update && apk upgrade && \
-  echo @3.10 http://nl.alpinelinux.org/alpine/v3.10/community >> /etc/apk/repositories && \
-  echo @3.10 http://nl.alpinelinux.org/alpine/v3.10/main >> /etc/apk/repositories && \
   apk add --no-cache \
-  chromium@3.10 \
-  nss@3.10 \
-  freetype@3.10 \
-  harfbuzz@3.10 \
-  ttf-freefont@3.10 \
-  git@3.10 && \
-  wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64 && \
-  chmod +x /usr/local/bin/dumb-init
+  chromium \
+  nss \
+  freetype \
+  harfbuzz \
+  ttf-freefont \
+  git
+
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
+  wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_x86_64; else \
+  wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_aarch64; fi \
+  && chmod +x /usr/local/bin/dumb-init
 
 ENTRYPOINT ["dumb-init"]
 
