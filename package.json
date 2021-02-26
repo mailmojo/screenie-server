@@ -17,7 +17,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">= 7.6.0"
+    "node": ">=10.18.1"
   },
   "repository": {
     "type": "git",
@@ -27,9 +27,9 @@
     "url": "https://github.com/eliksir/screenie-server/issues"
   },
   "dependencies": {
-    "koa": "2.11.0",
-    "puppeteer": "1.19.0",
+    "koa": "2.13.1",
+    "puppeteer": "8.0.0",
     "puppeteer-pool": "eliksir/puppeteer-pool#v1.3.1",
-    "winston": "3.2.1"
+    "winston": "3.3.3"
   }
 }
