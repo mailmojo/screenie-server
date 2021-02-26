@@ -14,9 +14,9 @@ npm install screenie-server
 ./node_modules/.bin/screenie-server
 ```
 
-Alternatively, we provide a Docker image (build from the
+Alternatively, we provide a Docker image (built from the
 [Dockerfile](Dockerfile)) at [eliksir/screenie-server](https://hub.docker.com/r/eliksir/screenie-server/).
-This container is not running in sandbox mode because the docker image doesn't
+This container is not running in sandbox mode because the Docker image doesn't
 support user namespaces.
 
 ## Configuration

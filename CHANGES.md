@@ -1,3 +1,15 @@
+# 4.0.0 / 26-02-2021
+
+- _BREAKING_: Minimum Node 10.18.1
+- Update to Puppeteer 8.0.0
+- Update Koa and Winston to latest minor release
+- Update Docker image to Node 14 and alpine 3.12
+- Multi arch Docker image with arm64 support
+
+# 3.0.0 / 08-01-2020
+
+- No new changes from 3.0.0-beta.2
+
 # 3.0.0-beta.2 / 05-11-2019
 
 - _BREAKING_: Don't render screenshot for URLs that respond with error status.
