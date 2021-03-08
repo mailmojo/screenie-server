@@ -18,6 +18,7 @@ RUN apk update && apk upgrade && \
   freetype \
   harfbuzz \
   ttf-freefont \
+  font-noto-cjk \
   git
 
 RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
