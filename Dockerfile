@@ -1,35 +1,42 @@
-FROM node:14-alpine3.12
+FROM node:20-bookworm-slim AS base
 
-ARG TARGETPLATFORM
+ARG PUPPETEER_SKIP_DOWNLOAD=true
+ENV SCREENIE_VERSION=6.0.0 \
+  SCREENIE_CHROMIUM_ARGS=--no-sandbox \
+  PUPPETEER_SKIP_DOWNLOAD=${PUPPETEER_SKIP_DOWNLOAD} \
+  NODE_ENV=production
 
-ENV SCREENIE_VERSION=4.0.0
-ENV SCREENIE_CHROMIUM_ARGS=--no-sandbox
-ENV SCREENIE_CHROMIUM_EXEC=/usr/lib/chromium/chrome
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# Install Chromium & fonts & dumb-init
+RUN apt-get update && apt-get install -y \
+    chromium \
+    chromium-common \
+    fonts-liberation \
+    fonts-noto-cjk \
+    fonts-freefont-ttf \
+    wget \
+    ca-certificates \
+    git \
+    dumb-init \
+  --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/src/app
+# Path for system chromium (adjust if needed)
+ENV SCREENIE_CHROMIUM_EXEC=/usr/bin/chromium
+
 WORKDIR /usr/src/app
 
-# Installs latest Chromium package
-RUN apk update && apk upgrade && \
-  apk add --no-cache \
-  chromium \
-  nss \
-  freetype \
-  harfbuzz \
-  ttf-freefont \
-  font-noto-cjk \
-  git
+# Copy dependency manifests first for better caching
+COPY package.json package-lock.json ./
 
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
-  wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_x86_64; else \
-  wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_aarch64; fi \
-  && chmod +x /usr/local/bin/dumb-init
+# Install dependencies (production only). Use npm ci for deterministic clean install.
+RUN npm ci --only=production && npm cache clean --force
 
-ENTRYPOINT ["dumb-init"]
+COPY src ./src
 
-RUN npm install -g screenie-server@${SCREENIE_VERSION} --unsafe-perm
+# Create non-root user
+RUN useradd -m -d /home/nodeuser nodeuser && chown -R nodeuser:nodeuser /usr/src/app
+USER nodeuser
 
 EXPOSE 3000
 
-CMD /usr/local/bin/screenie
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["node", "src/server.js"]
