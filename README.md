@@ -44,6 +44,24 @@ also set the default format through an environment variable:
 
 * `SCREENIE_DEFAULT_FORMAT`: Default format (default `jpeg`).
 
+### Capturing a single element
+
+You can capture only a specific DOM element by providing a CSS selector via the
+`selector` query parameter. Instead of a full (or clipped) page screenshot, the
+bounding box of the matched element will be returned. Example:
+
+```
+http://localhost:3000/?url=https://example.com&selector=#main-logo&format=png
+```
+
+If the selector isn't found within a timeout (default 5000ms) a `404` is
+returned. Element screenshots are not supported for PDF output; attempting to
+combine `format=pdf` with `selector` will return `400`.
+
+Environment variables:
+
+* `SCREENIE_SELECTOR_TIMEOUT`: Time in ms to wait for the selector to appear (default `5000`).
+
 The browser cluster can be tuned with environment variables. Legacy variables
 (`SCREENIE_POOL_MIN` / `SCREENIE_POOL_MAX`) are still accepted for backward
 compatibility; new names are preferred:

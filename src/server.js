@@ -46,6 +46,7 @@ const imageSize = {
 const serverPort = process.env.SCREENIE_PORT || 3000;
 const supportedFormats = ['jpg', 'jpeg', 'pdf', 'png'];
 const allowFileScheme = process.env.SCREENIE_ALLOW_FILE_SCHEME || false;
+const selectorTimeout = parseInt(process.env.SCREENIE_SELECTOR_TIMEOUT || '5000', 10);
 
 const app = new Koa();
 logger.log('verbose', 'Created KOA server');
@@ -91,6 +92,7 @@ async function initCluster() {
       height,
       format,
       fullPage,
+      selector,
     } = data;
 
     if (url == null || url.trim() === '') {
@@ -130,26 +132,57 @@ async function initCluster() {
     }
     const lowerFormat = chosenFormat.toLowerCase();
     let output;
-    logger.log('info', `Rendering screenshot of ${url} to ${lowerFormat}`);
+    logger.log('info', `Rendering screenshot of ${url} to ${lowerFormat}${selector ? ' (selector: ' + selector + ')' : ''}`);
+
+    if (selector && lowerFormat === 'pdf') {
+      const err = new Error('Selector screenshots are not supported for PDF output.');
+      err.status = 400;
+      throw err;
+    }
+
     if (lowerFormat === 'pdf') {
       output = await page.pdf({
         format: 'A4',
         margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
       });
     } else {
-      const clipInfo =
-        fullPage === '1'
-          ? { fullPage: true }
-          : { clip: { x: 0, y: 0, width: size.width, height: size.height } };
-      output = await page.screenshot(
-        Object.assign(
-          {
+      if (selector) {
+        try {
+          logger.log('verbose', `Waiting for selector '${selector}' (timeout ${selectorTimeout}ms)`);
+          await page.waitForSelector(selector, { timeout: selectorTimeout, visible: true });
+          const element = await page.$(selector);
+          if (!element) {
+            const err = new Error(`Selector '${selector}' not found`);
+            err.status = 404;
+            throw err;
+          }
+          output = await element.screenshot({
             type: lowerFormat === 'jpg' ? 'jpeg' : lowerFormat,
             omitBackground: true,
-          },
-          clipInfo
-        )
-      );
+          });
+        } catch (e) {
+          if (/waiting for selector/.test(e.message) || e.name === 'TimeoutError') {
+            const err = new Error(`Selector '${selector}' not found (timeout after ${selectorTimeout}ms)`);
+            err.status = 404;
+            throw err;
+          }
+          throw e;
+        }
+      } else {
+        const clipInfo =
+          fullPage === '1'
+            ? { fullPage: true }
+            : { clip: { x: 0, y: 0, width: size.width, height: size.height } };
+        output = await page.screenshot(
+          Object.assign(
+            {
+              type: lowerFormat === 'jpg' ? 'jpeg' : lowerFormat,
+              omitBackground: true,
+            },
+            clipInfo
+          )
+        );
+      }
     }
     return { output, format: lowerFormat };
   });
@@ -170,8 +203,8 @@ async function initCluster() {
 // Unified middleware to process screenshot request
 app.use(async ctx => {
   try {
-    const { url, width, height, format, fullPage } = ctx.request.query;
-    const result = await cluster.execute({ url, width, height, format, fullPage });
+    const { url, width, height, format, fullPage, selector } = ctx.request.query;
+    const result = await cluster.execute({ url, width, height, format, fullPage, selector });
     ctx.type = result.format;
     ctx.body = result.output;
   } catch (e) {
