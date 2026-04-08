@@ -44,6 +44,19 @@ variables:
 * `SCREENIE_WIDTH`: Default width, as integer, in pixels (default `1024`).
 * `SCREENIE_HEIGHT`: Default height, as integer, in pixels (default `768`).
 
+### Capturing a single element
+
+You can capture only a specific DOM element by providing a CSS selector via the
+`selector` query parameter. Instead of a full (or clipped) page screenshot, the
+bounding box of the matched element will be returned. Example:
+`http://localhost:3000/?url=https://example.com&selector=%23main-logo&format=png`
+
+If the selector is not found within a timeout (default `5000ms`), a `404` is
+returned. Element screenshots are not supported for PDF output; attempting to
+combine `format=pdf` with `selector` will return `400`.
+
+* `SCREENIE_SELECTOR_TIMEOUT`: Time in milliseconds to wait for the selector to appear (default `5000`).
+
 The `format` query parameter can be used to request a specific format of the
 screenshot. The supported formats are PNG, JPEG and even PDF. You can
 also set the default format through an environment variable:

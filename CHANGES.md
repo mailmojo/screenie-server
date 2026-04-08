@@ -6,6 +6,7 @@
 - Update Koa to 3.2.0 and Winston to 3.19.0
 - Tighten request validation and error handling for URL, format, and upstream load failures
 - Add structured JSON logging via `SCREENIE_LOG_FORMAT=json`
+- Add selector-based element screenshots with configurable wait timeout
 - Improve graceful shutdown handling for the HTTP server and browser cluster
 - Modernize the Docker image for system Chromium, `npm ci --omit=dev`, and non-root execution
 - Refresh the Docker publish workflow and keep it limited to `master` and `main`
