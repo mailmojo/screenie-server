@@ -27,9 +27,9 @@
     "url": "https://github.com/mailmojo/screenie-server/issues"
   },
   "dependencies": {
-    "koa": "^3.0.1",
-    "puppeteer": "^24.22.0",
-    "puppeteer-cluster": "^0.24.0",
-    "winston": "^3.17.0"
+    "koa": "^3.2.0",
+    "puppeteer": "^24.40.0",
+    "puppeteer-cluster": "^0.25.0",
+    "winston": "^3.19.0"
   }
 }

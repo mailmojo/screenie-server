@@ -39,34 +39,114 @@ const chromiumExec = process.env.SCREENIE_CHROMIUM_EXEC
   ? { executablePath: process.env.SCREENIE_CHROMIUM_EXEC }
   : {};
 const defaultFormat = process.env.SCREENIE_DEFAULT_FORMAT || 'jpeg';
+const defaultWidth = parseInteger(process.env.SCREENIE_WIDTH, 1024);
+const defaultHeight = parseInteger(process.env.SCREENIE_HEIGHT, 768);
 const imageSize = {
-  width: process.env.SCREENIE_WIDTH || 1024,
-  height: process.env.SCREENIE_HEIGHT || 768,
+  width: defaultWidth,
+  height: defaultHeight,
 };
-const serverPort = process.env.SCREENIE_PORT || 3000;
+const serverPort = parseInteger(process.env.SCREENIE_PORT, 3000);
 const supportedFormats = ['jpg', 'jpeg', 'pdf', 'png'];
-const allowFileScheme = process.env.SCREENIE_ALLOW_FILE_SCHEME || false;
+const allowFileScheme = parseBoolean(process.env.SCREENIE_ALLOW_FILE_SCHEME);
+const screenshotDelay = parseInteger(process.env.SCREENIE_SCREENSHOT_DELAY, 0);
+const maxConcurrency = parseInteger(
+  process.env.SCREENIE_POOL_MAX || process.env.SCREENIE_CLUSTER_MAX,
+  10
+);
+const minConcurrency = Math.min(
+  Math.max(
+    parseInteger(process.env.SCREENIE_POOL_MIN || process.env.SCREENIE_CLUSTER_MIN, 2),
+    0
+  ),
+  maxConcurrency
+);
 
 const app = new Koa();
 logger.log('verbose', 'Created KOA server');
 
-const screenshotDelay = process.env.SCREENIE_SCREENSHOT_DELAY;
-
 // Cluster will be launched asynchronously before starting the server
 let cluster;
+let server;
+let isShuttingDown = false;
+
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function parseInteger(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function parseBoolean(value) {
+  if (value == null) {
+    return false;
+  }
+
+  switch (String(value).trim().toLowerCase()) {
+    case '1':
+    case 'true':
+    case 'yes':
+    case 'on':
+      return true;
+    default:
+      return false;
+  }
+}
+
+function getViewportSize(width, height) {
+  return {
+    width: Math.max(1, Math.min(2048, parseInteger(width, imageSize.width))),
+    height: Math.max(1, Math.min(2048, parseInteger(height, imageSize.height))),
+  };
+}
+
+function normalizeFormat(format) {
+  const requestedFormat = (format || defaultFormat).toLowerCase();
+  if (!supportedFormats.includes(requestedFormat)) {
+    throw new HttpError(400, `Format ${format || defaultFormat} not supported.`);
+  }
+
+  return requestedFormat === 'jpg' ? 'jpeg' : requestedFormat;
+}
+
+function normalizeUrl(rawUrl) {
+  if (rawUrl == null || rawUrl.trim() === '') {
+    throw new HttpError(400, 'No url request parameter supplied.');
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch (error) {
+    throw new HttpError(400, `Invalid url request parameter: ${error.message}`);
+  }
+
+  if (parsedUrl.protocol === 'file:') {
+    if (!allowFileScheme) {
+      throw new HttpError(403, 'File scheme not allowed.');
+    }
+
+    return parsedUrl.toString();
+  }
+
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    throw new HttpError(400, `Unsupported URL protocol: ${parsedUrl.protocol}`);
+  }
+
+  return parsedUrl.toString();
+}
+
+function supportsResponseStatus(targetUrl) {
+  return targetUrl.startsWith('http://') || targetUrl.startsWith('https://');
+}
 
 async function initCluster() {
-  const maxConcurrency = parseInt(
-    process.env.SCREENIE_POOL_MAX || process.env.SCREENIE_CLUSTER_MAX || '10',
-    10
-  );
-  const minConcurrency = parseInt(
-    process.env.SCREENIE_POOL_MIN || process.env.SCREENIE_CLUSTER_MIN || '2',
-    10
-  );
-
   cluster = await Cluster.launch({
-    concurrency: Cluster.CONCURRENCY_CONTEXT, // Each task = isolated incognito context
+    concurrency: Cluster.CONCURRENCY_CONTEXT,
     maxConcurrency,
     puppeteerOptions: Object.assign({}, chromiumArgs, chromiumExec),
     monitor: false,
@@ -74,118 +154,171 @@ async function initCluster() {
 
   logger.log('verbose', 'Created Puppeteer cluster');
 
-  // Pre-warm cluster by queueing empty tasks up to min concurrency
-  for (let i = 0; i < minConcurrency; i++) {
-    cluster.queue({ warmup: true, url: 'about:blank' });
-  }
-
-  // Define the cluster task which handles the full screenshot flow
   await cluster.task(async ({ page, data }) => {
     if (data.warmup) {
-      return; // just open and close
+      await page.goto('about:blank');
+      return;
     }
 
-    const {
-      url,
-      width,
-      height,
-      format,
-      fullPage,
-    } = data;
+    const { url, width, height, format, fullPage } = data;
+    const targetUrl = normalizeUrl(url);
+    const outputFormat = normalizeFormat(format);
+    const size = getViewportSize(width, height);
+    const useFullPage = parseBoolean(fullPage);
 
-    if (url == null || url.trim() === '') {
-      throw new Error('No url request parameter supplied.');
-    }
-    if (url.indexOf('file://') >= 0 && !allowFileScheme) {
-      const err = new Error('File scheme not allowed');
-      err.status = 403;
-      throw err;
-    }
-
-    const size = {
-      width: Math.min(2048, parseInt(width, 10) || imageSize.width),
-      height: Math.min(2048, parseInt(height, 10) || imageSize.height),
-    };
     await page.setViewport(size);
 
-    logger.log('verbose', `[1] Attempting to load ${url}`);
-    const response = await page.goto(url);
-    const status = response.status();
-    logger.log('verbose', `Status ${status}`);
-    if (status < 200 || status > 299) {
-      const err = new Error('Non-OK server response');
-      err.status = status;
-      throw err;
-    }
-    await page.evaluateHandle('document.fonts.ready');
-    if (screenshotDelay) {
-      await new Promise(r => setTimeout(r, screenshotDelay));
+    logger.log('verbose', `Attempting to load ${targetUrl}`);
+
+    let response;
+    try {
+      response = await page.goto(targetUrl);
+    } catch (error) {
+      throw new HttpError(500, `Could not load page: ${error.message}`);
     }
 
-    let chosenFormat = format || defaultFormat;
-    if (supportedFormats.indexOf(chosenFormat.toLowerCase()) === -1) {
-      const err = new Error(`Format ${chosenFormat} not supported.`);
-      err.status = 400;
-      throw err;
+    if (supportsResponseStatus(targetUrl)) {
+      if (!response) {
+        throw new HttpError(500, 'Could not load page: missing navigation response.');
+      }
+
+      const status = response.status();
+      logger.log('verbose', `Status ${status}`);
+      if (status < 200 || status > 299) {
+        throw new HttpError(status, `Could not load page: upstream returned ${status}.`);
+      }
     }
-    const lowerFormat = chosenFormat.toLowerCase();
-    let output;
-    logger.log('info', `Rendering screenshot of ${url} to ${lowerFormat}`);
-    if (lowerFormat === 'pdf') {
-      output = await page.pdf({
-        format: 'A4',
-        margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
-      });
-    } else {
-      const clipInfo =
-        fullPage === '1'
-          ? { fullPage: true }
-          : { clip: { x: 0, y: 0, width: size.width, height: size.height } };
-      output = await page.screenshot(
-        Object.assign(
-          {
-            type: lowerFormat === 'jpg' ? 'jpeg' : lowerFormat,
-            omitBackground: true,
-          },
-          clipInfo
-        )
-      );
+
+    await page.evaluate(() => globalThis.document?.fonts?.ready ?? Promise.resolve());
+
+    if (screenshotDelay > 0) {
+      await new Promise(resolve => setTimeout(resolve, screenshotDelay));
     }
-    return { output, format: lowerFormat };
+
+    logger.log('info', `Rendering screenshot of ${targetUrl} to ${outputFormat}`);
+
+    try {
+      if (outputFormat === 'pdf') {
+        return {
+          output: await page.pdf({
+            format: 'A4',
+            margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
+            printBackground: true,
+          }),
+          format: outputFormat,
+        };
+      }
+
+      const screenshotOptions = useFullPage
+        ? { fullPage: true }
+        : { clip: { x: 0, y: 0, width: size.width, height: size.height } };
+
+      return {
+        output: await page.screenshot(
+          Object.assign(
+            {
+              type: outputFormat,
+              omitBackground: true,
+            },
+            screenshotOptions
+          )
+        ),
+        format: outputFormat,
+      };
+    } catch (error) {
+      throw new HttpError(400, `Could not render page: ${error.message}`);
+    }
   });
 
-  process.on('SIGTERM', async () => {
-    logger.log('info', 'Received SIGTERM, exiting...');
-    try {
-      await cluster.idle();
-      await cluster.close();
-    } catch (e) {
-      logger.log('error', `Error during shutdown: ${e.message}`);
-    } finally {
-      process.exit(143);
-    }
+  cluster.on('taskerror', (error, data, willRetry) => {
+    logger.log(
+      'error',
+      `Task error for ${data?.url || 'unknown url'}: ${error.message}${willRetry ? ' (will retry)' : ''}`
+    );
+  });
+
+  for (let i = 0; i < minConcurrency; i += 1) {
+    cluster.queue({ warmup: true });
+  }
+
+  if (minConcurrency > 0) {
+    await cluster.idle();
+  }
+}
+
+function closeServer() {
+  if (!server) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    server.close(error => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
   });
 }
 
-// Unified middleware to process screenshot request
-app.use(async ctx => {
-  try {
-    const { url, width, height, format, fullPage } = ctx.request.query;
-    const result = await cluster.execute({ url, width, height, format, fullPage });
-    ctx.type = result.format;
-    ctx.body = result.output;
-  } catch (e) {
-    const status = e.status || 400;
-    ctx.status = status;
-    ctx.body = e.message;
-    logger.log('error', e.message);
+async function shutdown(signal) {
+  if (isShuttingDown) {
+    return;
   }
+
+  isShuttingDown = true;
+  logger.log('info', `Received ${signal}, exiting...`);
+
+  try {
+    await closeServer();
+    if (cluster) {
+      await cluster.idle();
+      await cluster.close();
+    }
+  } catch (error) {
+    logger.log('error', `Error during shutdown: ${error.message}`);
+  } finally {
+    process.exit(signal === 'SIGTERM' ? 143 : 130);
+  }
+}
+
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (error) {
+    const status = error.status || 500;
+
+    ctx.status = status;
+    ctx.type = 'text/plain; charset=utf-8';
+    ctx.body = status >= 500 && !(error instanceof HttpError) ? 'Internal Server Error' : error.message;
+
+    if (status >= 500) {
+      ctx.app.emit('error', error, ctx);
+    }
+  }
+});
+
+app.use(async ctx => {
+  const { url, width, height, format, fullPage } = ctx.request.query;
+  const result = await cluster.execute({ url, width, height, format, fullPage });
+
+  ctx.type = result.format;
+  ctx.body = result.output;
+});
+
+app.on('error', error => {
+  logger.log('error', error);
 });
 
 initCluster()
   .then(() => {
-    app.listen(serverPort, '0.0.0.0');
-    logger.log('info', `Screenie server 0.0.0.0 started on port ${serverPort}`);
+    server = app.listen(serverPort, '0.0.0.0');
+    logger.log('info', `Screenie server started on 0.0.0.0:${serverPort}`);
   })
   .catch(err => {
     logger.log('error', `Failed to start cluster: ${err.message}`);

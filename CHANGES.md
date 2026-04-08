@@ -1,3 +1,16 @@
+# 6.0.0 / 08-04-2026
+
+- _BREAKING_: Minimum Node.js version is now 20
+- Replace the old custom Puppeteer pool with `puppeteer-cluster`
+- Update Puppeteer to 24.40.0
+- Update Koa to 3.2.0 and Winston to 3.19.0
+- Tighten request validation and error handling for URL, format, and upstream load failures
+- Add structured JSON logging via `SCREENIE_LOG_FORMAT=json`
+- Improve graceful shutdown handling for the HTTP server and browser cluster
+- Modernize the Docker image for system Chromium, `npm ci --omit=dev`, and non-root execution
+- Refresh the Docker publish workflow and keep it limited to `master` and `main`
+- Update README examples and configuration notes to match the current runtime behavior
+
 # 4.0.0 / 26-02-2021
 
 - _BREAKING_: Minimum Node 10.18.1

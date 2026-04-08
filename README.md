@@ -14,7 +14,13 @@ You can install from npm and run the server manually:
 
 ```bash
 npm install screenie-server
-./node_modules/.bin/screenie-server
+./node_modules/.bin/screenie
+```
+
+Or run it without a local install:
+
+```bash
+npx screenie-server
 ```
 
 Alternatively, a Docker image (built from the
@@ -61,13 +67,13 @@ To control the level of logging that will be performed, customize the
 
 To open up file scheme in URL parameter:
 
-* `SCREENIE_ALLOW_FILE_SCHEME`: true (default `false`).
+* `SCREENIE_ALLOW_FILE_SCHEME`: Accepts `1`, `true`, `yes`, or `on` to allow `file://` URLs (default `false`).
 
 Delay from the `load` event until the screenshot is taken. This can solve
 issues with rendering (i.e. rendering webfonts) not being complete before the
 screenshot.
 
-* `SCREENIE_SCREENSHOT_DELAY`: Time in milliseconds (optional – if set, waits after fonts ready before capture).
+* `SCREENIE_SCREENSHOT_DELAY`: Time in milliseconds (optional; waits after fonts are ready before capture).
 
 And lastly, of course the HTTP port can be customized:
 
