@@ -139,7 +139,7 @@ Published under the MIT license.
 
 ---
 
-### Changelog Highlights (since 6.x)
+### Changelog Highlights (since 5.x)
 
 * Migrated from custom puppeteer pool to `puppeteer-cluster` for improved concurrency.
 * Updated runtime requirement to Node.js >= 20.
