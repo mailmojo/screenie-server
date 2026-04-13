@@ -49,6 +49,7 @@ const serverPort = parseInteger(process.env.SCREENIE_PORT, 3000);
 const supportedFormats = ['jpg', 'jpeg', 'pdf', 'png'];
 const allowFileScheme = parseBoolean(process.env.SCREENIE_ALLOW_FILE_SCHEME);
 const screenshotDelay = parseInteger(process.env.SCREENIE_SCREENSHOT_DELAY, 0);
+const selectorTimeout = Math.max(parseInteger(process.env.SCREENIE_SELECTOR_TIMEOUT, 5000), 0);
 const maxConcurrency = parseInteger(
   process.env.SCREENIE_POOL_MAX || process.env.SCREENIE_CLUSTER_MAX,
   10
@@ -140,6 +141,19 @@ function normalizeUrl(rawUrl) {
   return parsedUrl.toString();
 }
 
+function normalizeSelector(rawSelector) {
+  if (rawSelector == null) {
+    return null;
+  }
+
+  const selector = rawSelector.trim();
+  if (selector === '') {
+    throw new HttpError(400, 'Empty selector request parameter supplied.');
+  }
+
+  return selector;
+}
+
 function supportsResponseStatus(targetUrl) {
   return targetUrl.startsWith('http://') || targetUrl.startsWith('https://');
 }
@@ -160,11 +174,16 @@ async function initCluster() {
       return;
     }
 
-    const { url, width, height, format, fullPage } = data;
+    const { url, width, height, format, fullPage, selector } = data;
     const targetUrl = normalizeUrl(url);
     const outputFormat = normalizeFormat(format);
+    const requestedSelector = normalizeSelector(selector);
     const size = getViewportSize(width, height);
     const useFullPage = parseBoolean(fullPage);
+
+    if (requestedSelector && outputFormat === 'pdf') {
+      throw new HttpError(400, 'Element screenshots are not supported for PDF output.');
+    }
 
     await page.setViewport(size);
 
@@ -189,13 +208,29 @@ async function initCluster() {
       }
     }
 
+    let element;
+    if (requestedSelector) {
+      try {
+        element = await page.waitForSelector(requestedSelector, { timeout: selectorTimeout });
+      } catch (error) {
+        if (error?.name === 'TimeoutError') {
+          throw new HttpError(404, `Selector not found: ${requestedSelector}`);
+        }
+
+        throw new HttpError(400, `Invalid selector request parameter: ${error.message}`);
+      }
+    }
+
     await page.evaluate(() => globalThis.document?.fonts?.ready ?? Promise.resolve());
 
     if (screenshotDelay > 0) {
       await new Promise(resolve => setTimeout(resolve, screenshotDelay));
     }
 
-    logger.log('info', `Rendering screenshot of ${targetUrl} to ${outputFormat}`);
+    logger.log(
+      'info',
+      `Rendering screenshot of ${targetUrl}${requestedSelector ? ` using selector ${requestedSelector}` : ''} to ${outputFormat}`
+    );
 
     try {
       if (outputFormat === 'pdf') {
@@ -204,6 +239,24 @@ async function initCluster() {
             format: 'A4',
             margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
             printBackground: true,
+          }),
+          format: outputFormat,
+        };
+      }
+
+      if (requestedSelector) {
+        const boundingBox = await element.boundingBox();
+        if (!boundingBox) {
+          throw new HttpError(
+            400,
+            `Could not render element: selector ${requestedSelector} does not have a visible bounding box.`
+          );
+        }
+
+        return {
+          output: await element.screenshot({
+            type: outputFormat,
+            omitBackground: true,
           }),
           format: outputFormat,
         };
@@ -304,8 +357,8 @@ app.use(async (ctx, next) => {
 });
 
 app.use(async ctx => {
-  const { url, width, height, format, fullPage } = ctx.request.query;
-  const result = await cluster.execute({ url, width, height, format, fullPage });
+  const { url, width, height, format, fullPage, selector } = ctx.request.query;
+  const result = await cluster.execute({ url, width, height, format, fullPage, selector });
 
   ctx.type = result.format;
   ctx.body = result.output;
