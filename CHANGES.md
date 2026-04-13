@@ -1,4 +1,4 @@
-# 6.0.0 / 08-04-2026
+# 5.0.0 / 08-04-2026
 
 - _BREAKING_: Minimum Node.js version is now 20
 - Replace the old custom Puppeteer pool with `puppeteer-cluster`

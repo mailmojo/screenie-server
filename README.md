@@ -23,10 +23,19 @@ Or run it without a local install:
 npx screenie-server
 ```
 
-Alternatively, a Docker image (built from the
-[Dockerfile](Dockerfile)) can be built locally. (Previous images under
-`eliksir/screenie-server` are deprecated; the project now lives under the
-`mailmojo` organization.) The container runs Chromium with `--no-sandbox` by
+Alternatively, you can run the published container image from GitHub Container
+Registry:
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -e SCREENIE_LOG_LEVEL=info \
+  ghcr.io/mailmojo/screenie-server:latest
+```
+
+Previous images under `eliksir/screenie-server` on Docker Hub are deprecated.
+If you prefer, you can still build your own image locally from the
+[Dockerfile](Dockerfile). The container runs Chromium with `--no-sandbox` by
 default because typical container runtimes lack the required user namespace /
 seccomp configuration. If you run in a hardened environment that supports it,
 you may remove `--no-sandbox` via `SCREENIE_CHROMIUM_ARGS`.
@@ -97,14 +106,23 @@ And lastly, of course the HTTP port can be customized:
 
 ## Docker
 
-Build locally:
+Run the published image from GitHub Container Registry:
 
 ```bash
-docker build -t mailmojo/screenie-server:local .
 docker run --rm \
-	-p 3000:3000 \
-	-e SCREENIE_LOG_LEVEL=info \
-	mailmojo/screenie-server:local
+  -p 3000:3000 \
+  -e SCREENIE_LOG_LEVEL=info \
+  ghcr.io/mailmojo/screenie-server:latest
+```
+
+Build locally if you want to customize the image yourself:
+
+```bash
+docker build -t screenie-server:local .
+docker run --rm \
+  -p 3000:3000 \
+  -e SCREENIE_LOG_LEVEL=info \
+  mailmojo/screenie-server:local
 ```
 
 Then:
@@ -134,7 +152,7 @@ Published under the MIT license.
 
 ---
 
-### Changelog Highlights (since 6.x)
+### Changelog Highlights (since 5.x)
 
 * Migrated from custom puppeteer pool to `puppeteer-cluster` for improved concurrency.
 * Updated runtime requirement to Node.js >= 20.
