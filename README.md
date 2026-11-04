@@ -155,7 +155,7 @@ Published under the MIT license.
 ### Changelog Highlights (since 5.x)
 
 * Migrated from custom puppeteer pool to `puppeteer-cluster` for improved concurrency.
-* Updated runtime requirement to Node.js >= 20.
+* Updated runtime requirement to Node.js >= 22.12.
 * Added structured logging option via `SCREENIE_LOG_FORMAT=json`.
 * Modernized Docker image (non-root, system Chromium, smaller footprint).
 * Added backward-compatible environment variable mapping for cluster sizing.

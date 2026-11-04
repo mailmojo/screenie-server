@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 
 ARG PUPPETEER_SKIP_DOWNLOAD=true
 ENV SCREENIE_VERSION=5.0.0 \
