@@ -17,7 +17,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=22.12"
+    "node": ">=24"
   },
   "repository": {
     "type": "git",
