@@ -1,7 +1,7 @@
 # Unreleased
 
-- _BREAKING_: Minimum Node.js version is now 22.12 (required by Puppeteer 25)
-- Update Docker image to Node 22
+- _BREAKING_: Minimum Node.js version is now 24 (Puppeteer 25 requires 22.12 or newer)
+- Update Docker image to Node 24
 
 # 5.0.0 / 08-04-2026
 
