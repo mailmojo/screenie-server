@@ -1,8 +1,12 @@
-# Unreleased
+# 6.0.0 / 05-11-2026
 
 - _BREAKING_: Minimum Node.js version is now 24 (Puppeteer 25 requires 22.12 or newer)
 - Update Docker image to Node 24
 - Update Puppeteer to 25.16.0
+- Fix PDF and screenshot responses being sent as JSON with Puppeteer 25, which returns `Uint8Array` instead of `Buffer`
+- Update Koa to 3.2.1
+- Update the GitHub Actions used by the Docker publish workflow to their latest majors
+- Add Dependabot configuration for npm, GitHub Actions and the Docker base image, ignoring major Node bumps
 
 # 5.0.0 / 08-04-2026
 
