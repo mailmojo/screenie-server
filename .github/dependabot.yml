@@ -23,3 +23,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Stay on LTS releases: major Node bumps are done by hand.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
