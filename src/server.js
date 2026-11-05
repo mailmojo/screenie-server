@@ -235,11 +235,13 @@ async function initCluster() {
     try {
       if (outputFormat === 'pdf') {
         return {
-          output: await page.pdf({
-            format: 'A4',
-            margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
-            printBackground: true,
-          }),
+          output: Buffer.from(
+            await page.pdf({
+              format: 'A4',
+              margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
+              printBackground: true,
+            })
+          ),
           format: outputFormat,
         };
       }
@@ -254,10 +256,12 @@ async function initCluster() {
         }
 
         return {
-          output: await element.screenshot({
-            type: outputFormat,
-            omitBackground: true,
-          }),
+          output: Buffer.from(
+            await element.screenshot({
+              type: outputFormat,
+              omitBackground: true,
+            })
+          ),
           format: outputFormat,
         };
       }
@@ -267,13 +271,15 @@ async function initCluster() {
         : { clip: { x: 0, y: 0, width: size.width, height: size.height } };
 
       return {
-        output: await page.screenshot(
-          Object.assign(
-            {
-              type: outputFormat,
-              omitBackground: true,
-            },
-            screenshotOptions
+        output: Buffer.from(
+          await page.screenshot(
+            Object.assign(
+              {
+                type: outputFormat,
+                omitBackground: true,
+              },
+              screenshotOptions
+            )
           )
         ),
         format: outputFormat,
